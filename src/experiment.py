@@ -64,13 +64,15 @@ class Experiment:
         c1 = np.exp(-(self.omega_tab - self.param_photons['omega_p'][0])**2 /(4*self.param_photons['delta_k'][0]**2)) \
                  * np.exp(-1j * self.omega_tab * self.param_photons['x_0'][0]) \
                     * np.concatenate((np.ones(self.n_modes), np.zeros(self.n_modes)))
+        c1 = c1 / np.linalg.norm(c1)
         
         c2 = np.exp(-(self.omega_tab - self.param_photons['omega_p'][1])**2 /(4*self.param_photons['delta_k'][1]**2)) \
                  * np.exp(-1j * self.omega_tab * self.param_photons['x_0'][1]) \
                     * np.concatenate((np.zeros(self.n_modes), np.ones(self.n_modes)))
+        c2 = c2 / np.linalg.norm(c2)
 
-        c_init = 0.5 * (c1[:, np.newaxis] * c2[np.newaxis, :] + c2[:, np.newaxis] * c1[np.newaxis, :])
-        c_init = c_init / np.linalg.norm(c_init)
+
+        c_init = 1/np.sqrt(2) * (c1[:, np.newaxis] * c2[np.newaxis, :] + c2[:, np.newaxis] * c1[np.newaxis, :])
 
         #propagate the state using the selected integrator
         c_array, b1_array, b2_array = self.integrator_func(c_init, b1_init, b2_init, self.omega_tab, self.param_cavity, self.param_time_evol, progress=progress)
