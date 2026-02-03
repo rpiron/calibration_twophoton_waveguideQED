@@ -34,7 +34,7 @@ def increment_state(c,b1,b2,omega_tab,param_cavity,param_time_evol, t):
     return -1j*dt*c_new, -1j*dt*b1_new, -1j*dt*b2_new
 
 
-def rg_propagator(c_init, b1_init, b2_init, omega_tab, param_cavity, param_time_evol, progress:bool=False):
+def rg_propagator(c_init, b1_init, b2_init, omega_tab, param_cavity, param_time_evol, progress:bool=False, store_state:bool=True):
     """
     Propagates the state of the system using the RK4 scheme.
     
@@ -55,21 +55,23 @@ def rg_propagator(c_init, b1_init, b2_init, omega_tab, param_cavity, param_time_
     n_time_step = int(param_time_evol['T'] / dt)
 
     n_modes = len(c_init)//2
-    c_array = np.zeros((n_time_step, 2*n_modes, 2*n_modes), dtype=complex)
-    b1_array = np.zeros((n_time_step, 2*n_modes), dtype=complex)
-    b2_array = np.zeros((n_time_step, 2*n_modes), dtype=complex)
 
-    # Set the initial conditions
-    c_array[0] = c_init
-    b1_array[0] = b1_init
-    b2_array[0] = b2_init
+    c_current = c_init
+    b1_current = b1_init
+    b2_current = b2_init
+
+    if store_state:
+        c_array = np.zeros((n_time_step, 2*n_modes, 2*n_modes), dtype=complex)
+        b1_array = np.zeros((n_time_step, 2*n_modes), dtype=complex)
+        b2_array = np.zeros((n_time_step, 2*n_modes), dtype=complex)
+        # Set the initial conditions
+        c_array[0] = c_init
+        b1_array[0] = b1_init
+        b2_array[0] = b2_init
 
     # Time evolution loop
     for i in tqdm(range(1, n_time_step), disable=not progress):
         t = i * dt
-        c_current = c_array[i-1]
-        b1_current = b1_array[i-1]
-        b2_current = b2_array[i-1]
 
         c_n1, b1_n1, b2_n1 = increment_state(c_current, b1_current, b2_current, omega_tab, param_cavity, param_time_evol, t)
         c_n2, b1_n2, b2_n2 = increment_state(c_current + c_n1/2, b1_current + b1_n1/2, b2_current + b2_n1/2, omega_tab, param_cavity, param_time_evol, t + dt/2)
@@ -80,9 +82,18 @@ def rg_propagator(c_init, b1_init, b2_init, omega_tab, param_cavity, param_time_
         b1_new = b1_current + (b1_n1 + 2*b1_n2 + 2*b1_n3 + b1_n4) / 6
         b2_new = b2_current + (b2_n1 + 2*b2_n2 + 2*b2_n3 + b2_n4) / 6
 
-        c_array[i] = c_new
-        b1_array[i] = b1_new
-        b2_array[i] = b2_new
 
-    return c_array, b1_array, b2_array 
+        if store_state:
+            c_array[i] = c_new
+            b1_array[i] = b1_new
+            b2_array[i] = b2_new
+        
+        c_current = c_new
+        b1_current = b1_new
+        b2_current = b2_new
+
+    if store_state:
+        return c_array, b1_array, b2_array 
+    else:
+        return c_current, b1_current, b2_current
     

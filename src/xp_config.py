@@ -14,3 +14,4 @@ class ExperimentConfig:
     param_time_evol: Dict[str, float]
     cutoffs: Dict[str, float]
     integrator_func: Optional[Any] = rg_propagator
+    store_state: bool = True

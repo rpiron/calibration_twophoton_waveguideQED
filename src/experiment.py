@@ -11,6 +11,9 @@ class Experiment:
 
         #integrator can be rg_propagator or ed_propagator (default: rg_propagator)
         self.integrator_func = config.integrator_func
+
+        #Indicate whether all the states towards the evolution are stored
+        self.store_state = config.store_state
         
         #parameters of the photon wavepackets and of the cavity
         self.param_photons = config.param_photons
@@ -33,16 +36,30 @@ class Experiment:
         self.n_modes = len(omega_tab_half)
 
         #initialize arrays to store the time evolution of the state
-        self.c_array = np.zeros((int(self.param_time_evol['T']/self.param_time_evol['dt']), 2*self.n_modes, 2*self.n_modes), dtype=complex)
-        self.b1_array =  np.zeros((int(self.param_time_evol['T']/self.param_time_evol['dt']), 2*self.n_modes), dtype=complex)
-        self.b2_array =  np.zeros((int(self.param_time_evol['T']/self.param_time_evol['dt']), 2*self.n_modes), dtype=complex)
+        if self.store_state:
+            self.c_array = np.zeros((int(self.param_time_evol['T']/self.param_time_evol['dt']), 2*self.n_modes, 2*self.n_modes), dtype=complex)
+            self.b1_array =  np.zeros((int(self.param_time_evol['T']/self.param_time_evol['dt']), 2*self.n_modes), dtype=complex)
+            self.b2_array =  np.zeros((int(self.param_time_evol['T']/self.param_time_evol['dt']), 2*self.n_modes), dtype=complex)
 
-        #initialize arrays to store the excited state population and the photon's repartition
-        self.An_array = np.zeros(int(self.param_time_evol['T']/self.param_time_evol['dt']), dtype=float)
-        self.P11n_array = np.zeros(int(self.param_time_evol['T']/self.param_time_evol['dt']), dtype=float)
-        self.P12n_array = np.zeros(int(self.param_time_evol['T']/self.param_time_evol['dt']), dtype=float)
-        self.P21n_array = np.zeros(int(self.param_time_evol['T']/self.param_time_evol['dt']), dtype=float)
-        self.P22n_array = np.zeros(int(self.param_time_evol['T']/self.param_time_evol['dt']), dtype=float)
+            #initialize arrays to store the excited state population and the photon's repartition
+            self.An_array = np.zeros(int(self.param_time_evol['T']/self.param_time_evol['dt']), dtype=float)
+            self.P11n_array = np.zeros(int(self.param_time_evol['T']/self.param_time_evol['dt']), dtype=float)
+            self.P12n_array = np.zeros(int(self.param_time_evol['T']/self.param_time_evol['dt']), dtype=float)
+            self.P21n_array = np.zeros(int(self.param_time_evol['T']/self.param_time_evol['dt']), dtype=float)
+            self.P22n_array = np.zeros(int(self.param_time_evol['T']/self.param_time_evol['dt']), dtype=float)
+
+        else:
+            self.c_array = np.zeros((2*self.n_modes, 2*self.n_modes), dtype=complex)
+            self.b1_array =  np.zeros(2*self.n_modes, dtype=complex)
+            self.b2_array =  np.zeros(2*self.n_modes, dtype=complex)
+        
+            #initialize arrays to store the excited state population and the photon's repartition
+            self.An_array = np.zeros(1, dtype=float)
+            self.P11n_array = np.zeros(1, dtype=float)
+            self.P12n_array = np.zeros(1, dtype=float)
+            self.P21n_array = np.zeros(1, dtype=float)
+            self.P22n_array = np.zeros(1, dtype=float)
+
 
         #test monochromatic limit
 
@@ -75,7 +92,8 @@ class Experiment:
         c_init = 1/np.sqrt(2) * (c1[:, np.newaxis] * c2[np.newaxis, :] + c2[:, np.newaxis] * c1[np.newaxis, :])
 
         #propagate the state using the selected integrator
-        c_array, b1_array, b2_array = self.integrator_func(c_init, b1_init, b2_init, self.omega_tab, self.param_cavity, self.param_time_evol, progress=progress)
+        c_array, b1_array, b2_array = self.integrator_func(c_init, b1_init, b2_init, self.omega_tab, self.param_cavity, self.param_time_evol, 
+                                                           progress=progress, store_state = self.store_state)
 
         self.c_array = c_array
         self.b1_array = b1_array
@@ -87,12 +105,19 @@ class Experiment:
 
         #compute the excited state population and photon number at each time step
 
-        for i in tqdm(range(len(self.c_array)), disable=not progress):
-            self.An_array[i] = np.sum(np.abs(self.b1_array[i])**2) + np.sum(np.abs(self.b2_array[i])**2)
-            self.P11n_array[i] = np.sum(np.abs(self.c_array[i, :self.n_modes, :self.n_modes])**2)
-            self.P12n_array[i] = np.sum(np.abs(self.c_array[i, :self.n_modes, self.n_modes:])**2)
-            self.P21n_array[i] = np.sum(np.abs(self.c_array[i, self.n_modes:, :self.n_modes])**2)
-            self.P22n_array[i] = np.sum(np.abs(self.c_array[i, self.n_modes:, self.n_modes:])**2)
+        if self.store_state:
+            for i in tqdm(range(len(self.c_array)), disable=not progress):
+                self.An_array[i] = np.sum(np.abs(self.b1_array[i])**2) + np.sum(np.abs(self.b2_array[i])**2)
+                self.P11n_array[i] = np.sum(np.abs(self.c_array[i, :self.n_modes, :self.n_modes])**2)
+                self.P12n_array[i] = np.sum(np.abs(self.c_array[i, :self.n_modes, self.n_modes:])**2)
+                self.P21n_array[i] = np.sum(np.abs(self.c_array[i, self.n_modes:, :self.n_modes])**2)
+                self.P22n_array[i] = np.sum(np.abs(self.c_array[i, self.n_modes:, self.n_modes:])**2)
+        else:
+            self.An_array[-1] = np.sum(np.abs(self.b1_array)**2) + np.sum(np.abs(self.b2_array)**2)
+            self.P11n_array[-1] = np.sum(np.abs(self.c_array[:self.n_modes, :self.n_modes])**2)
+            self.P12n_array[-1] = np.sum(np.abs(self.c_array[:self.n_modes, self.n_modes:])**2)
+            self.P21n_array[-1] = np.sum(np.abs(self.c_array[self.n_modes:, :self.n_modes])**2)
+            self.P22n_array[-1] = np.sum(np.abs(self.c_array[self.n_modes:, self.n_modes:])**2)
 
         #test probability conservation at final time
         if not np.isclose(self.P11n_array[-1] + self.P12n_array[-1] + self.P21n_array[-1] + self.P22n_array[-1] + self.An_array[-1], 1.0, atol=1e-3) :
