@@ -32,7 +32,6 @@ def run_antiHOM_vs_bandwith(omega_q, omega_ref, lbda_tab, index_omega_q = 0, ind
 
     omega_A = 10*pi
     Gamma = 5*pi
-
     antiHOM_proba_tab = np.zeros(len(lbda_tab))
 
     for i in tqdm(range(len(lbda_tab)), disable=not progress):
