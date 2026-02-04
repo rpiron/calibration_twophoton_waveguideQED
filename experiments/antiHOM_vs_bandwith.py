@@ -14,11 +14,13 @@ from src.bare_param import get_bare_param
 
 pi = np.pi
 
-def run_antiHOM_vs_bandwith(omega_ref, lbda_tab, index_experiment = 0, store_results:bool=True, progress:bool=True):
+def run_antiHOM_vs_bandwith(omega_q, omega_ref, lbda_tab, index_omega_q = 0, index_experiment = 0, 
+                            store_results:bool=True, progress:bool=True):
     """
     Computes the antiHOM probability at omega_q = omega_A - Gamma/2 for different bandwith
     
     Parameters:
+    omega_q (float) : Photons incoming frequency
     omega_ref (float) : Center of the frequency window
     lbda_tab (np.array) : Array of different bandwith, defining several frequency window to test
 
@@ -48,7 +50,7 @@ def run_antiHOM_vs_bandwith(omega_ref, lbda_tab, index_experiment = 0, store_res
 
         param_time_evol = {'T': L/2, 'dt': 0.01}
 
-        param_photons = {'omega_p': [omega_A - Gamma/2, omega_A - Gamma/2 ], 
+        param_photons = {'omega_p': [omega_q, omega_q], 
                         'delta_k': [0.05*pi, 0.05*pi],
                         'x_0': [-L/4, -L/4]}
 
@@ -75,7 +77,7 @@ def run_antiHOM_vs_bandwith(omega_ref, lbda_tab, index_experiment = 0, store_res
         data_to_save = {'lbda_tab': lbda_tab, 'antiHOM_proba_tab': antiHOM_proba_tab}
         df = pd.DataFrame(data_to_save)
         if index_experiment:
-            df.to_csv(project_root / 'results' / 'csv_files' /f'antiHOM_vs_bandwith_{index_experiment}.csv', index=False)
+            df.to_csv(project_root / 'results' / 'csv_files' /f'antiHOM_vs_bandwith_{index_omega_q}_{index_experiment}.csv', index=False)
         else:
             df.to_csv(project_root / 'results' / 'csv_files' /'antiHOM_vs_bandwith.csv', index=False)
     
