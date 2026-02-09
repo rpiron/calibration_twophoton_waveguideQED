@@ -39,38 +39,43 @@ def run_antiHOM_vs_bandwith(omega_q, omega_ref, lbda_tab, index_omega_q = 0, ind
         #Frequency window
         cutoffs = {'ir_cutoff': omega_ref - lbda_tab[i] , 'uv_cutoff': omega_ref + lbda_tab[i]}
 
-        #Bare parameters
-        omega_0, gamma = get_bare_param(omega_A, Gamma, omega_ref, lbda_tab[i])
+        #Sanity check
+        if omega_q < cutoffs['ir_cutoff']:
+            print("WARNING : The photon frequency is not included in the frequency window. Returning NaN")
+            antiHOM_proba_tab[i] = np.nan
+        else:
+            #Bare parameters
+            omega_0, gamma = get_bare_param(omega_A, Gamma, omega_ref, lbda_tab[i])
 
-        #Parameters of the simulation
-        L = 50
+            #Parameters of the simulation
+            L = 50
 
-        param_cavity = {'omega_0': omega_0, 'gamma': gamma, 'L': L}
+            param_cavity = {'omega_0': omega_0, 'gamma': gamma, 'L': L}
 
-        param_time_evol = {'T': L/2, 'dt': 0.01}
+            param_time_evol = {'T': L/2, 'dt': 0.05}
 
-        param_photons = {'omega_p': [omega_q, omega_q], 
-                        'delta_k': [0.05*pi, 0.05*pi],
-                        'x_0': [-L/4, -L/4]}
+            param_photons = {'omega_p': [omega_q, omega_q], 
+                            'delta_k': [0.05*pi, 0.05*pi],
+                            'x_0': [-L/4, -L/4]}
 
-        #Run the scattering experiment
-        config = ExperimentConfig(param_photons=param_photons,
-                                  param_cavity=param_cavity,
-                                  param_time_evol=param_time_evol,
-                                  cutoffs=cutoffs,
-                                  store_state=False)
-        
-        experiment = Experiment(config)
-        experiment.propagate_state(progress=True)
+            #Run the scattering experiment
+            config = ExperimentConfig(param_photons=param_photons,
+                                    param_cavity=param_cavity,
+                                    param_time_evol=param_time_evol,
+                                    cutoffs=cutoffs,
+                                    store_state=False)
+            
+            experiment = Experiment(config)
+            experiment.propagate_state(progress=False)
 
-        #Compute the coindicence only at final time to save computational resources
-        n_modes = experiment.n_modes
-        P12_final = np.sum(np.abs(experiment.c_array[:n_modes, n_modes:])**2)
-        P21_final = np.sum(np.abs(experiment.c_array[n_modes:, :n_modes])**2)
+            #Compute the coindicence only at final time to save computational resources
+            n_modes = experiment.n_modes
+            P12_final = np.sum(np.abs(experiment.c_array[:n_modes, n_modes:])**2)
+            P21_final = np.sum(np.abs(experiment.c_array[n_modes:, :n_modes])**2)
 
-        antiHOM_proba_tab[i] = P12_final + P21_final
+            antiHOM_proba_tab[i] = P12_final + P21_final
 
-        del experiment
+            del experiment
 
     if store_results:
         data_to_save = {'lbda_tab': lbda_tab, 'antiHOM_proba_tab': antiHOM_proba_tab}
