@@ -10,7 +10,7 @@ sys.path.append(str(project_root))
 #Local imports
 from src.xp_config import ExperimentConfig
 from src.experiment import Experiment
-from src.bare_param import get_bare_param
+from src.bare_param import get_bare_param, get_bare_param_first_order
 
 pi = np.pi
 
