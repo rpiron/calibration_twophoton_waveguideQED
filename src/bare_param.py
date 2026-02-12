@@ -117,6 +117,7 @@ def get_bare_param_n(omega_A, Gamma, ir, uv, n=1):
     if n == 0:
         omega_0 =  omega_A
         gamma = Gamma
+
     else:
         #create the tab with the coefficients
         def error_function(vars):
@@ -156,4 +157,4 @@ def get_bare_param_n(omega_A, Gamma, ir, uv, n=1):
             raise print("WARNING : Initial guess for the bare parameters failed.")
             
         
-        return omega_0, gamma
+    return omega_0, gamma
