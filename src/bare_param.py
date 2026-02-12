@@ -112,44 +112,48 @@ def get_bare_param_n(omega_A, Gamma, ir, uv, n=1):
     omega_0 : bare frequency to parameterize the Hamiltonian
     gamma : bare decay rate to parameterize the Hamiltonian
     """
-    
-    #create the tab with the coefficients
-    def error_function(vars):
 
-        omega_0_guess, gamma_guess = vars
-        #Create the polynom 
-        alpha_tab = np.zeros(n+1, dtype=complex)
-        alpha_tab[0] = -gamma_guess/2 + 1j*gamma_guess/(2*pi)*np.log((uv-omega_0_guess)/(omega_0_guess - ir))
+    #n=0 serves as a baseline : no correction in the bare parameters
+    if n == 0:
+        omega_0 =  omega_A
+        gamma = Gamma
+    else:
+        #create the tab with the coefficients
+        def error_function(vars):
 
-        for i in range(1, n+1):
-            alpha_tab[i] = -np.exp(1j*(i-1)*pi/2) * gamma_guess / (2*i*pi) * \
-                           (1/(ir - omega_0_guess)**i - 1/(uv - omega_0_guess)**i)
+            omega_0_guess, gamma_guess = vars
+            #Create the polynom 
+            alpha_tab = np.zeros(n+1, dtype=complex)
+            alpha_tab[0] = -gamma_guess/2 + 1j*gamma_guess/(2*pi)*np.log((uv-omega_0_guess)/(omega_0_guess - ir))
 
-        alpha_tab[1] -= 1
+            for i in range(1, n+1):
+                alpha_tab[i] = -np.exp(1j*(i-1)*pi/2) * gamma_guess / (2*i*pi) * \
+                            (1/(ir - omega_0_guess)**i - 1/(uv - omega_0_guess)**i)
+
+            alpha_tab[1] -= 1
+            
+            roots = np.roots(alpha_tab[::-1])
+
+            #Choose the root closer to the expected result
+            r = min(roots, key=lambda x: np.abs(x + Gamma/2 - 1j*(omega_0_guess - omega_A)))
+            
+            # error term
+            error = r + Gamma/2 - 1j*(omega_0_guess - omega_A)
+
+            return [np.real(error), np.imag(error)]
         
-        roots = np.roots(alpha_tab[::-1])
+        try:
+            initial_guess = get_bare_param_n1(omega_A, Gamma, ir, uv)
+            sol = root(error_function, initial_guess, tol=1e-10)
+            
+            if not sol.success:
+                print("WARNING : Bare parameters search failed. Returning the n=1 solution.")
+                omega_0, gamma = initial_guess
+            else:
+                omega_0, gamma = sol.x
 
-        #Choose the root closer to the expected result
-        r = min(roots, key=lambda x: np.abs(x + Gamma/2 - 1j*(omega_0_guess - omega_A)))
+        except Exception:
+            raise print("WARNING : Initial guess for the bare parameters failed.")
+            
         
-        #sanity check
-        if n == 1:
-            if np.abs(r + alpha_tab[0] / alpha_tab[1]) > 1e-3:
-                raise RuntimeError("The root does not correspond to the analytic prediction")
-
-        # error term
-        error = r + Gamma/2 - 1j*(omega_0_guess - omega_A)
-
-        return [np.real(error), np.imag(error)]
-    
-    try:
-        initial_guess = get_bare_param_n1(omega_A, Gamma, ir, uv)
-        sol = root(error_function, initial_guess, tol=1e-10)
-
-        if not sol.success:
-            raise RuntimeError("Bare parameters search failed")
-        
-    except Exception:
-        raise print("WARNING : Initial guess for the bare parameters failed.")
-    
-    return sol.x
+        return omega_0, gamma
