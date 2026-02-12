@@ -10,11 +10,11 @@ sys.path.append(str(project_root))
 #Local imports
 from src.xp_config import ExperimentConfig
 from src.experiment import Experiment
-from src.bare_param import get_bare_param, get_bare_param_first_order
+from src.bare_param import get_bare_param_n
 
 pi = np.pi
 
-def run_coincidence_vs_bandwith(omega_q, ir_tab, uv_tab, index_omega_q = 0, index_experiment = 0, 
+def run_coincidence_vs_bandwith(omega_q, ir_tab, uv_tab, index_omega_q = 0, index_experiment = 0, n=1,
                                 sym_variables:bool=True, store_results:bool=True, progress:bool=True):
     """
     Computes the coincidence probability at omega_q for different frequency windows
@@ -33,6 +33,7 @@ def run_coincidence_vs_bandwith(omega_q, ir_tab, uv_tab, index_omega_q = 0, inde
     omega_A = 10*pi
     Gamma = 5*pi
     coincidence_tab = np.zeros(len(ir_tab))
+
     for i in tqdm(range(len(ir_tab)), disable=not progress):
 
         #Frequency window
@@ -45,37 +46,40 @@ def run_coincidence_vs_bandwith(omega_q, ir_tab, uv_tab, index_omega_q = 0, inde
         
         else:
             #Bare parameters
-            omega_0, gamma = get_bare_param(omega_A, Gamma, ir_tab[i], uv_tab[i])
+            try:
+                omega_0, gamma = get_bare_param_n(omega_A, Gamma, ir_tab[i], uv_tab[i], n=n)
 
-            #Parameters of the simulation
-            L = 50
+                #Parameters of the simulation
+                L = 50
 
-            param_cavity = {'omega_0': omega_0, 'gamma': gamma, 'L': L}
+                param_cavity = {'omega_0': omega_0, 'gamma': gamma, 'L': L}
 
-            param_time_evol = {'T': L/2, 'dt': 0.05}
+                param_time_evol = {'T': L/2, 'dt': 0.01}
 
-            param_photons = {'omega_p': [omega_q, omega_q], 
-                            'delta_k': [0.05*pi, 0.05*pi],
-                            'x_0': [-L/4, -L/4]}
+                param_photons = {'omega_p': [omega_q, omega_q], 
+                                'delta_k': [0.05*pi, 0.05*pi],
+                                'x_0': [-L/4, -L/4]}
 
-            #Run the scattering experiment
-            config = ExperimentConfig(param_photons=param_photons,
-                                    param_cavity=param_cavity,
-                                    param_time_evol=param_time_evol,
-                                    cutoffs=cutoffs,
-                                    store_state=False)
-            
-            experiment = Experiment(config)
-            experiment.propagate_state(progress=False)
+                #Run the scattering experiment
+                config = ExperimentConfig(param_photons=param_photons,
+                                        param_cavity=param_cavity,
+                                        param_time_evol=param_time_evol,
+                                        cutoffs=cutoffs,
+                                        store_state=False)
+                
+                experiment = Experiment(config)
+                experiment.propagate_state(progress=False)
 
-            #Compute the coindicence only at final time to save computational resources
-            n_modes = experiment.n_modes
-            P12_final = np.sum(np.abs(experiment.c_array[:n_modes, n_modes:])**2)
-            P21_final = np.sum(np.abs(experiment.c_array[n_modes:, :n_modes])**2)
+                #Compute the coindicence only at final time to save computational resources
+                _, _, P12n_array, P21n_array, _ = experiment.compute_observables()
 
-            coincidence_tab[i] = P12_final + P21_final
+                coincidence_tab[i] = P12n_array[-1] + P21n_array[-1]
 
-            del experiment
+                del experiment
+
+            except Exception:
+                print("WARNING : Bare parameters not found. Returning NaN")
+                coincidence_tab[i] = np.nan
 
     if store_results:
         data_to_save = {'ir_tab': ir_tab, 'uv_tab': uv_tab, 'coincidence_tab': coincidence_tab}
