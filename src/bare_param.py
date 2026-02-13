@@ -129,7 +129,7 @@ def get_bare_param_n(omega_A, Gamma, ir, uv, n=1):
 
             for i in range(1, n+1):
                 alpha_tab[i] = -np.exp(1j*(i-1)*pi/2) * gamma_guess / (2*i*pi) * \
-                            (1/(ir - omega_0_guess)**i - 1/(uv - omega_0_guess)**i)
+                            ((-1)**i * np.exp(-i * np.log(omega_0_guess - ir)) - np.exp(-i * np.log(uv - omega_0_guess)))
 
             alpha_tab[1] -= 1
             
