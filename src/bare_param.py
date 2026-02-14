@@ -125,14 +125,15 @@ def get_bare_param_n(omega_A, Gamma, ir, uv, n=1):
             omega_0_guess, gamma_guess = vars
             #Create the polynom 
             alpha_tab = np.zeros(n+1, dtype=complex)
+
             alpha_tab[0] = -gamma_guess/2 + 1j*gamma_guess/(2*pi)*np.log((uv-omega_0_guess)/(omega_0_guess - ir))
 
             for i in range(1, n+1):
-                alpha_tab[i] = -np.exp(1j*(i-1)*pi/2) * gamma_guess / (2*i*pi) * \
-                            ((-1)**i * np.exp(-i * np.log(omega_0_guess - ir)) - np.exp(-i * np.log(uv - omega_0_guess)))
-
+                alpha_tab[i] = - (1j)**(i-1) * gamma_guess / (2*i*pi) * \
+                            ((ir - omega_0_guess)**(-i) - (uv - omega_0_guess)**(-i))
             alpha_tab[1] -= 1
-            
+            #if n > 1:
+            #    alpha_tab[2] = 0
             roots = np.roots(alpha_tab[::-1])
 
             #Choose the root closer to the expected result
@@ -143,18 +144,76 @@ def get_bare_param_n(omega_A, Gamma, ir, uv, n=1):
 
             return [np.real(error), np.imag(error)]
         
+
+        #initial_guess = get_bare_param_n1(omega_A, Gamma, ir, uv)
+        initial_guess = omega_A, Gamma
+        sol = root(error_function, initial_guess, tol=1e-10)
+            
+        if not sol.success:
+            print("WARNING : Bare parameters search failed. Returning the n=1 solution.")
+            omega_0, gamma = initial_guess
+        else:
+            omega_0, gamma = sol.x
+
+    return omega_0, gamma
+
+
+def get_bare_param_n_test(omega_A, Gamma, ir, uv, n=1):
+    """
+    Computes the bare parameters by inverting the renormalization relations
+    (omega_0, gamma) = F(omega_A, Gamma, omega_ref, lbda)
+    
+    Parameters:
+    omega_A : physical transition frequency of the TLS
+    Gamma : physical decay rate of the TLS
+    ir: infrared cutoff of the spectral density
+    uv: ultraviolet cutoff of the spectral density
+    n : maximal n to keep in the alpha truncation
+
+    Returns:
+    omega_0 : bare frequency to parameterize the Hamiltonian
+    gamma : bare decay rate to parameterize the Hamiltonian
+    """
+
+    #n=0 serves as a baseline : no correction in the bare parameters
+    if n == 0:
+        omega_0 =  omega_A
+        gamma = Gamma
+
+    else:
+        #create the tab with the coefficients
+        def error_function(vars):
+
+            omega_0_guess, gamma_guess = vars
+
+            #Store the alpha coeffcients
+            polynom_tab = np.zeros(n+1, dtype=complex)
+
+            polynom_tab[0] = -gamma_guess/2 + 1j*gamma_guess/(2*pi)*np.log((uv-omega_0_guess)/(omega_0_guess - ir))
+
+            for i in range(1, n+1):
+                polynom_tab[i] = - (1j)**(i-1) * gamma_guess / (2*i*pi) * \
+                            ((ir - omega_0_guess)**(-i) - (uv - omega_0_guess)**(-i)) \
+                            * (1j* (omega_0_guess - omega_A) - Gamma/2)**i
+
+            error_term = np.sum(polynom_tab) - (1j* (omega_0_guess - omega_A) - Gamma/2)
+
+            return [error_term.real, error_term.imag]
+
         try:
             initial_guess = get_bare_param_n1(omega_A, Gamma, ir, uv)
-            sol = root(error_function, initial_guess, tol=1e-10)
-            
+
+            sol = root(error_function,
+                    [initial_guess[0], initial_guess[1]],
+                    tol=1e-5)
+
             if not sol.success:
                 print("WARNING : Bare parameters search failed. Returning the n=1 solution.")
                 omega_0, gamma = initial_guess
             else:
                 omega_0, gamma = sol.x
 
-        except Exception:
-            raise print("WARNING : Initial guess for the bare parameters failed.")
+        except Exception as e:
+            raise RuntimeError("Initial guess for the bare parameters failed.") from e
             
-        
     return omega_0, gamma
