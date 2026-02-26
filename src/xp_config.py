@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, Optional, Any
-from src.rg_integrator import rg_propagator
+from src.rk_integrator import rk_propagator
 import numpy as np
 
 @dataclass
@@ -13,5 +13,5 @@ class ExperimentConfig:
     param_cavity: Dict[str, float]
     param_time_evol: Dict[str, float]
     cutoffs: Dict[str, float]
-    integrator_func: Optional[Any] = rg_propagator
+    integrator_func: Optional[Any] = rk_propagator
     store_state: bool = True

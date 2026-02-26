@@ -1,4 +1,4 @@
-from src.rg_integrator import rg_propagator
+from src.rk_integrator import rk_propagator
 from src.xp_config import ExperimentConfig
 import numpy as np
 from tqdm import tqdm
@@ -38,8 +38,7 @@ class Experiment:
         #initialize arrays to store the time evolution of the state
         if self.store_state:
             self.c_array = np.zeros((int(self.param_time_evol['T']/self.param_time_evol['dt']), 2*self.n_modes, 2*self.n_modes), dtype=complex)
-            self.b1_array =  np.zeros((int(self.param_time_evol['T']/self.param_time_evol['dt']), 2*self.n_modes), dtype=complex)
-            self.b2_array =  np.zeros((int(self.param_time_evol['T']/self.param_time_evol['dt']), 2*self.n_modes), dtype=complex)
+            self.b_array =  np.zeros((int(self.param_time_evol['T']/self.param_time_evol['dt']), 2*self.n_modes), dtype=complex)
 
             #initialize arrays to store the excited state population and the photon's repartition
             self.An_array = np.zeros(int(self.param_time_evol['T']/self.param_time_evol['dt']), dtype=float)
@@ -50,8 +49,7 @@ class Experiment:
 
         else:
             self.c_array = np.zeros((2*self.n_modes, 2*self.n_modes), dtype=complex)
-            self.b1_array =  np.zeros(2*self.n_modes, dtype=complex)
-            self.b2_array =  np.zeros(2*self.n_modes, dtype=complex)
+            self.b_array =  np.zeros(2*self.n_modes, dtype=complex)
         
             #initialize arrays to store the excited state population and the photon's repartition
             self.An_array = np.zeros(1, dtype=float)
@@ -74,8 +72,7 @@ class Experiment:
     def propagate_state(self, progress:bool=False):
 
         #initialize the state
-        b1_init = np.zeros(2*self.n_modes)
-        b2_init = np.zeros(2*self.n_modes)
+        b_init = np.zeros(2*self.n_modes)
 
         #joint wavefunction for the two-photon state 
         c1 = np.exp(-(self.omega_tab - self.param_photons['omega_p'][0])**2 /(4*self.param_photons['delta_k'][0]**2)) \
@@ -92,14 +89,13 @@ class Experiment:
         c_init = 1/np.sqrt(2) * (c1[:, np.newaxis] * c2[np.newaxis, :] + c2[:, np.newaxis] * c1[np.newaxis, :])
 
         #propagate the state using the selected integrator
-        c_array, b1_array, b2_array = self.integrator_func(c_init, b1_init, b2_init, self.omega_tab, self.param_cavity, self.param_time_evol, 
+        c_array, b_array = self.integrator_func(c_init, b_init, self.omega_tab, self.param_cavity, self.param_time_evol, 
                                                            progress=progress, store_state = self.store_state)
 
         self.c_array = c_array
-        self.b1_array = b1_array
-        self.b2_array = b2_array
+        self.b_array = b_array
 
-        return c_array, b1_array, b2_array
+        return c_array, b_array
     
     def compute_observables(self, progress:bool=False):
 
@@ -107,13 +103,13 @@ class Experiment:
 
         if self.store_state:
             for i in tqdm(range(len(self.c_array)), disable=not progress):
-                self.An_array[i] = np.sum(np.abs(self.b1_array[i])**2) + np.sum(np.abs(self.b2_array[i])**2)
+                self.An_array[i] = np.sum(np.abs(self.b_array[i])**2)
                 self.P11n_array[i] = np.sum(np.abs(self.c_array[i, :self.n_modes, :self.n_modes])**2)
                 self.P12n_array[i] = np.sum(np.abs(self.c_array[i, :self.n_modes, self.n_modes:])**2)
                 self.P21n_array[i] = np.sum(np.abs(self.c_array[i, self.n_modes:, :self.n_modes])**2)
                 self.P22n_array[i] = np.sum(np.abs(self.c_array[i, self.n_modes:, self.n_modes:])**2)
         else:
-            self.An_array[-1] = np.sum(np.abs(self.b1_array)**2) + np.sum(np.abs(self.b2_array)**2)
+            self.An_array[-1] = np.sum(np.abs(self.b_array)**2)
             self.P11n_array[-1] = np.sum(np.abs(self.c_array[:self.n_modes, :self.n_modes])**2)
             self.P12n_array[-1] = np.sum(np.abs(self.c_array[:self.n_modes, self.n_modes:])**2)
             self.P21n_array[-1] = np.sum(np.abs(self.c_array[self.n_modes:, :self.n_modes])**2)
