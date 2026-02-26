@@ -113,8 +113,8 @@ def get_bare_param_n(omega_A, Gamma, ir, uv, n=1):
     gamma : bare decay rate to parameterize the Hamiltonian
     """
 
-    #n=0 serves as a baseline : no correction in the bare parameters
-    if n == 0:
+    #n=-1 serves as a baseline : no correction in the bare parameters
+    if n == -1:
         omega_0 =  omega_A
         gamma = Gamma
 
@@ -123,15 +123,17 @@ def get_bare_param_n(omega_A, Gamma, ir, uv, n=1):
             #Store the alpha coeffcients
             polynom_tab = np.zeros(n+1, dtype=complex)
 
-            polynom_tab[0] = -gamma_guess/2 + 1j*gamma_guess/(2*pi)*np.log((uv-omega_0_guess)/(omega_0_guess - ir))
+            X = (1j* (omega_0_guess - omega_A) - Gamma/2)
+
+            polynom_tab[0] = -gamma_guess/2 + 1j*gamma_guess/(2*pi)*np.log(np.abs((uv-omega_0_guess)/(omega_0_guess - ir)))
 
             for i in range(1, n+1):
-                #My expression involves (-1j)**(i-1) : runing dummy tests here
-                polynom_tab[i] = (1j)**(i-1) * gamma_guess / (2*i*pi) * \
-                            ((omega_0_guess - ir)**(-i) + (-1)**(i-1) * (uv - omega_0_guess)**(-i)) \
-                            * (1j* (omega_0_guess - omega_A) - Gamma/2)**i
+                #Runing dummy tests here : this is not the analytical experssion I've found
+                polynom_tab[i] = (-1j)**(i-1) * gamma_guess / (2*i*pi) * \
+                                ((omega_0_guess - ir)**(-i) + (-1)**(i-1) * (uv - omega_0_guess)**(-i)) \
+                                * X**i
 
-            error_term = np.sum(polynom_tab) - (1j* (omega_0_guess - omega_A) - Gamma/2)
+            error_term = np.sum(polynom_tab) - X
 
             return error_term
         
@@ -143,10 +145,6 @@ def get_bare_param_n(omega_A, Gamma, ir, uv, n=1):
         initial_guess = get_bare_param_n1(omega_A, Gamma, ir, uv)
         sol = root(F_real, initial_guess, tol=1e-10)
             
-        if not sol.success:
-            print("WARNING : Bare parameters search failed. Returning the n=1 solution.")
-            omega_0, gamma = initial_guess
-        else:
-            omega_0, gamma = sol.x
+        omega_0, gamma = sol.x
 
     return omega_0, gamma
