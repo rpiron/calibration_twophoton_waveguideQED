@@ -68,6 +68,6 @@ def run_coincidence_vs_bandwith(param_photons, param_cavity_physical, param_time
     if store_results:
         data_to_save = {'ir_tab': ir_tab, 'uv_tab': uv_tab, 'coincidence_tab': coincidence_tab}
         df = pd.DataFrame(data_to_save)
-        df.to_csv(project_root / 'results' / 'csv_files' / 'concidence_vs_bandwith' / f'coincidence_vs_bandwith_{index_omega_q}_{index_experiment}_n{n}.csv', index=False)
+        df.to_csv(project_root / 'results' / 'csv_files' / 'coincidence_vs_bandwidth' / f'coincidence_vs_bandwith_omega{index_omega_q}_xp{index_experiment}_n{n}.csv', index=False)
         
     return ir_tab, uv_tab, coincidence_tab

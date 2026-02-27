@@ -54,8 +54,8 @@ def run_coincidence_vs_rkstep(param_photons, param_cavity_physical, T, N_step_ta
         data_to_save = {'N_step_tab' : N_step_tab, 'coincidence_tab': coincidence_tab}
         df = pd.DataFrame(data_to_save)
         if n == -1:
-            df.to_csv(project_root / 'results' / 'csv_files' / f'coincidence_vs_rkstep_norenorm_{index_experiment}.csv', index=False)
+            df.to_csv(project_root / 'results' / 'csv_files' / 'coincidence_vs_rkstep' / f'coincidence_vs_rkstep_norenorm_{index_experiment}.csv', index=False)
         else:
-            df.to_csv(project_root / 'results' / 'csv_files' / f'coincidence_vs_rkstep_n{n}_{index_experiment}.csv', index=False)
+            df.to_csv(project_root / 'results' / 'csv_files' / 'coincidence_vs_rkstep' / f'coincidence_vs_rkstep_n{n}_{index_experiment}.csv', index=False)
         
     return N_step_tab, coincidence_tab
