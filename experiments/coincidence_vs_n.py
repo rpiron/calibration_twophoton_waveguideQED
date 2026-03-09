@@ -14,21 +14,21 @@ from src.bare_param import get_bare_param_n
 
 pi = np.pi
 
-def run_coincidence_vs_rkstep(param_photons, param_cavity_physical, T, N_step_tab, cutoffs, n,
-                              index_experiment = 0, store_results:bool=True, progress:bool=True):
+def run_coincidence_vs_n(param_photons, param_cavity_physical, param_time_evol, cutoffs, n_tab, 
+                         index_omega_q = 0, index_experiment = 0, store_results:bool=True, progress:bool=True):
+    """
+    To be completed
+    """
     
-    coincidence_tab = np.zeros(len(N_step_tab))
+    coincidence_tab = np.zeros(len(n_tab))
     
-    for i in tqdm(range(len(N_step_tab)), disable=not progress):
-
-        dt = T / N_step_tab[i]
-        param_time_evol = {'T': T, 'dt': dt}
+    for i in tqdm(range(len(n_tab)), disable=not progress):
     
         #get the bare parameters : n=-1 serves as a baseline (no renormalization)
         omega_0, gamma = get_bare_param_n(param_cavity_physical['omega_A'], 
                                           param_cavity_physical['Gamma'], 
                                           cutoffs['ir_cutoff'], 
-                                          cutoffs['uv_cutoff'], n=n)
+                                          cutoffs['uv_cutoff'], n=n_tab[i])
         
         #Parameters of the simulation
         param_cavity = {'omega_0': omega_0, 'gamma': gamma, 'L': param_cavity_physical['L']}
@@ -51,11 +51,8 @@ def run_coincidence_vs_rkstep(param_photons, param_cavity_physical, T, N_step_ta
         del experiment
     
     if store_results:
-        data_to_save = {'N_step_tab' : N_step_tab, 'coincidence_tab': coincidence_tab}
+        data_to_save = {'n_tab' : n_tab, 'coincidence_tab': coincidence_tab}
         df = pd.DataFrame(data_to_save)
-        if n == -1:
-            df.to_csv(project_root / 'results' / 'csv_files' / 'coincidence_vs_rkstep' / f'coincidence_vs_rkstep_norenorm_{index_experiment}.csv', index=False)
-        else:
-            df.to_csv(project_root / 'results' / 'csv_files' / 'coincidence_vs_rkstep' / f'coincidence_vs_rkstep_n{n}_{index_experiment}.csv', index=False)
+        df.to_csv(project_root / 'results' / 'csv_files' / 'coincidence_vs_n' / f'coincidence_vs_n_omega{index_omega_q}_xp{index_experiment}.csv', index=False)
         
-    return N_step_tab, coincidence_tab
+    return n_tab, coincidence_tab
