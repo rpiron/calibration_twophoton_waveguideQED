@@ -12,7 +12,7 @@ from src.xp_config import ExperimentConfig
 from src.experiment import Experiment
 
 def run_coincidence_vs_frequency(param_photons_bis, param_cavity, param_time_evol, frequency_values, cutoffs, index_experiment=0, 
-                                store_results:bool=True, progress:bool=True):
+                                correction:bool=False, store_results:bool=True, progress:bool=True):
 
     """
     Runs the coincidence against frequency experiment for different photon central frequencies.
@@ -62,7 +62,10 @@ def run_coincidence_vs_frequency(param_photons_bis, param_cavity, param_time_evo
         data_to_save = {'photon_frequency_tab': frequency_values, 'final_reflection_tab': coincidence_tab}
         df = pd.DataFrame(data_to_save)
         if index_experiment:
-            df.to_csv(project_root / 'results' / 'csv_files' /f'coincidence_vs_frequency_{index_experiment}.csv', index=False)
+            if correction:
+                df.to_csv(project_root / 'results' / 'csv_files' /f'coincidence_vs_frequency_{index_experiment}_corrected.csv', index=False)
+            else:
+                df.to_csv(project_root / 'results' / 'csv_files' /f'coincidence_vs_frequency_{index_experiment}.csv', index=False)
         else:
             df.to_csv(project_root / 'results' / 'csv_files' /'coincidence_vs_frequency.csv', index=False)
     
