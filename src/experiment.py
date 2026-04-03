@@ -28,7 +28,7 @@ class Experiment:
         self.messages = {}
 
         #Frequency modes array assoiciated with the experiment
-        omega_tab_half = np.array([2*np.pi*n/self.param_cavity['L'] for n in range(1000000) \
+        omega_tab_half = np.array([2*np.pi*n/self.param_cavity['L'] for n in range(-1000000,1000000) \
                                    if (2*np.pi*n/self.param_cavity['L'] <= self.uv_cutoff and \
                                        2*np.pi*n/self.param_cavity['L'] >= self.ir_cutoff)])
         
