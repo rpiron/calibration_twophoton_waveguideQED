@@ -4,20 +4,20 @@ from tqdm import tqdm
 def increment_state(c,b,omega_tab,param_cavity,param_time_evol, t):
     """
     Computes the infinitesimal increment (c_new, b_new) = -i * dt * V_I(t) (c,b)
-    
+
     Parameters:
     c (np array): Coefficients in front of the states |alpha k, beta p, g>
     b (np array): Coefficients in front of the states |alpha k, e >
     omega_tab (np array): Array of containing two copies of the frequency modes.
-    param_cavity: dictionnary of parameters {omega_0, gamma, L, T, dt}
+    param_cavity: dictionnary of parameters {omega_0, gamma_0, L, T, dt}
     param_time_evol: dictionnary of parameters {T, dt, n_time_step}
-    
+
     Returns:
-    c_new (np array): Updated coefficients.
-    b_new (np array): Updated atomic coefficients.
+    c_new (np.ndarray): Increment of the two-photon coefficients.
+    b_new (np.ndarray): Increment of the atomic coefficients.
     """
     omega_0 = param_cavity['omega_0']
-    gamma_0 = param_cavity['gamma']
+    gamma_0 = param_cavity['gamma_0']
     L = param_cavity['L']
 
     dt = param_time_evol['dt']
@@ -37,15 +37,13 @@ def rk_propagator(c_init, b_init, omega_tab, param_cavity, param_time_evol, prog
     
     Parameters:
     c_init (np array): initial coefficients in front of the states |1_k, 1_k', g>
-    b1_init (np array): initial atomic coefficients in front of the state |1_k, 0, e>
-    b12init (np array): initial atomic coefficients in front of the state |0, 1_k', e>
+    b_init (np array): Initial atomic coefficients in front of the excited-state basis.
     omega_tab (array): Array of containing two copies of the frequency modes.
     param_time_evol: dictionnary of parameters {T, dt, n_time_step}
     
     Returns:
-    c_array (np array): Array of c coefficients at each time step.
-    b1_array (np array): Array of b1 coefficients at each time step.
-    b2_array (np array): Array of b2 coefficients at each time step.
+    c_array (np.ndarray): Two-photon coefficients at each time step, or the final array.
+    b_array (np.ndarray): Atomic coefficients at each time step, or the final array.
     """
     
     dt = param_time_evol['dt']
@@ -59,11 +57,11 @@ def rk_propagator(c_init, b_init, omega_tab, param_cavity, param_time_evol, prog
     if store_state:
         c_array = np.zeros((n_time_step, 2*n_modes, 2*n_modes), dtype=complex)
         b_array = np.zeros((n_time_step, 2*n_modes), dtype=complex)
-        # Set the initial conditions
+        # Store the initial conditions.
         c_array[0] = c_init
         b_array[0] = b_init
 
-    # Time evolution loop
+    # Time-evolution loop.
     for i in tqdm(range(1, n_time_step), disable=not progress):
         t = i * dt
 

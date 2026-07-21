@@ -4,22 +4,22 @@ from pathlib import Path
 from tqdm import tqdm
 import pandas as pd
 
-project_root = Path().resolve().parents[0]
+project_root = Path(__file__).resolve().parents[1]
 sys.path.append(str(project_root))
 
-#Local imports
+# Local imports.
 from src.xp_config import ExperimentConfig
 from src.experiment import Experiment
 
 def run_coincidence_vs_frequency(param_photons_bis, param_cavity, param_time_evol, frequency_values, cutoffs, index_experiment=0, 
-                                correction:bool=False, store_results:bool=True, progress:bool=True):
+                                correction:bool=False, monochr:bool=True, store_results:bool=True, progress:bool=True):
 
     """
     Runs the coincidence against frequency experiment for different photon central frequencies.
     
     Parameters:
-    param_photon_bis (Dict) : Dictionary containing only {'delta_k', 'x_0'} for both photons
-    param_cavity (Dict) : Dictionary containing {'omega_0', 'gamma', 'L'}
+    param_photon_bis (Dict) : Dictionary containing only {'sigma_w', 'x_0'} for both photons
+    param_cavity (Dict) : Dictionary containing {'omega_0', 'gamma_0', 'L'}
     param_time_evol (Dict) : Dictionary containing {'T', 'dt'}
     cutoffs (Dict) : Dictionary containing {'ir_cutoff', 'uv_cutoff'} 
     frequency_values (np.array) : Array of photon central frequency values
@@ -29,11 +29,11 @@ def run_coincidence_vs_frequency(param_photons_bis, param_cavity, param_time_evo
 
     Returns:
     frequency_values (np.array) : Array of photon central frequency values used.
-    final_reflection_tab (np.array) : Array of final reflection values corresponding to each frequency.
+    coincidence_tab (np.array) : Final coincidence probability for each frequency.
 
     """
 
-    #prepare the array to store the results
+    # Allocate the output array.
     coincidence_tab = np.zeros(len(frequency_values))
 
     for i in tqdm(range(len(frequency_values)), disable=not progress):
@@ -46,10 +46,10 @@ def run_coincidence_vs_frequency(param_photons_bis, param_cavity, param_time_evo
                                   param_time_evol=param_time_evol,
                                   cutoffs=cutoffs,
                                   store_state=False)
-        
+
         experiment = Experiment(config)
         experiment.propagate_state(progress=True)
-        #Compute the coindicence only at final time to save computational resources
+        # Compute the coincidence only at the final time.
         n_modes = experiment.n_modes
         P12_final = np.sum(np.abs(experiment.c_array[:n_modes, n_modes:])**2)
         P21_final = np.sum(np.abs(experiment.c_array[n_modes:, :n_modes])**2)
@@ -61,11 +61,16 @@ def run_coincidence_vs_frequency(param_photons_bis, param_cavity, param_time_evo
     if store_results:
         data_to_save = {'photon_frequency_tab': frequency_values, 'final_reflection_tab': coincidence_tab}
         df = pd.DataFrame(data_to_save)
+
         if index_experiment:
-            if correction:
-                df.to_csv(project_root / 'results' / 'csv_files' /f'coincidence_vs_frequency_{index_experiment}_corrected.csv', index=False)
-            else:
-                df.to_csv(project_root / 'results' / 'csv_files' /f'coincidence_vs_frequency_{index_experiment}.csv', index=False)
+            if correction and monochr:
+                df.to_csv(project_root / 'results' / 'csv_files' / 'coincidence_vs_frequency' / 'monochr' /f'coincidence_vs_frequency_{index_experiment}_corrected.csv', index=False)
+            elif correction and not monochr:
+                df.to_csv(project_root / 'results' / 'csv_files' / 'coincidence_vs_frequency' / 'non_monochr' /f'coincidence_vs_frequency_{index_experiment}_corrected.csv', index=False)
+            elif not correction and monochr:
+                df.to_csv(project_root / 'results' / 'csv_files' / 'coincidence_vs_frequency' / 'monochr' /f'coincidence_vs_frequency_{index_experiment}.csv', index=False)
+            elif not correction and not monochr:
+                df.to_csv(project_root / 'results' / 'csv_files' / 'coincidence_vs_frequency' / 'non_monochr' /f'coincidence_vs_frequency_{index_experiment}.csv', index=False)
         else:
             df.to_csv(project_root / 'results' / 'csv_files' /'coincidence_vs_frequency.csv', index=False)
     
